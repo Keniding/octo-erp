@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.expo/
+.expo-shared/
+*.log
+npm-debug.log*
+.DS_Store
+coverage/
+playwright-report/
+test-results/
+.env
+.env.local
+web-build/
+.turbo/

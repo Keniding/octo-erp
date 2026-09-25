@@ -1,0 +1,56 @@
+.ds-button {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+  border: var(--border-hairline) solid var(--ink);
+  cursor: pointer;
+  transition: background-color 0.1s ease, color 0.1s ease;
+}
+
+.ds-button--md {
+  padding: var(--space-2) var(--space-4);
+  font-size: 16px;
+}
+
+.ds-button--sm {
+  padding: var(--space-1) var(--space-2);
+  font-size: 14px;
+}
+
+.ds-button--primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
+}
+.ds-button--primary:hover {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+
+.ds-button--secondary {
+  background: transparent;
+  color: var(--ink);
+  border-color: var(--ink);
+}
+.ds-button--secondary:hover {
+  background: var(--ink);
+  color: var(--surface);
+}
+
+.ds-button--ghost {
+  background: transparent;
+  color: var(--accent);
+  border-color: transparent;
+  text-decoration: underline;
+  padding-left: 0;
+  padding-right: 0;
+}
+.ds-button--ghost:hover {
+  color: var(--ink);
+}
+
+.ds-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

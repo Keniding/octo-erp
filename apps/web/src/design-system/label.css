@@ -1,0 +1,17 @@
+.ds-label {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+
+.ds-label--muted {
+  color: var(--ink-muted);
+}
+.ds-label--ink {
+  color: var(--ink);
+}
+.ds-label--accent {
+  color: var(--accent);
+}

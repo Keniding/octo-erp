@@ -1,0 +1,36 @@
+.ds-grid-paper {
+  position: relative;
+  background-color: var(--surface-raised);
+  background-image: linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: var(--space-grid) var(--space-grid);
+  padding: var(--space-4);
+}
+
+.ds-grid-paper__content {
+  position: relative;
+}
+
+.ds-grid-paper__reg {
+  position: absolute;
+  color: var(--ink-muted);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+}
+.ds-grid-paper__reg--tl {
+  top: var(--space-1);
+  left: var(--space-1);
+}
+.ds-grid-paper__reg--tr {
+  top: var(--space-1);
+  right: var(--space-1);
+}
+.ds-grid-paper__reg--bl {
+  bottom: var(--space-1);
+  left: var(--space-1);
+}
+.ds-grid-paper__reg--br {
+  bottom: var(--space-1);
+  right: var(--space-1);
+}

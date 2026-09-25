@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Octo ERP",
+    "slug": "octo-erp-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "scheme": "octoerp",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.octoerp.mobile"
+    },
+    "android": {
+      "package": "com.octoerp.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#f5f2eb"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}

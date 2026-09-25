@@ -1,0 +1,18 @@
+{
+  "name": "octo-erp",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "packages/*",
+    "apps/web",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace apps/web",
+    "dev:mobile": "npm run start --workspace apps/mobile",
+    "build:web": "npm run build --workspace apps/web",
+    "typecheck:web": "npm run typecheck --workspace apps/web",
+    "typecheck:mobile": "npm run typecheck --workspace apps/mobile",
+    "test:e2e": "npm run test:e2e --workspace apps/web"
+  }
+}

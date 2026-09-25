@@ -1,0 +1,125 @@
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.section-block {
+  margin-top: var(--space-8);
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .card-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .two-col {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.variant-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.variant-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  border-top: var(--border-hairline) solid var(--rule);
+  padding-top: var(--space-1);
+  font-size: 14px;
+}
+
+.stack-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .form-row {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.variant-fieldset {
+  border: var(--border-hairline) solid var(--rule);
+  border-radius: var(--radius-none);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.variant-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-2);
+  align-items: end;
+  border-bottom: var(--border-hairline) solid var(--grid-line);
+  padding-bottom: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .variant-row {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+.ds-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.ds-table th,
+.ds-table td {
+  text-align: left;
+  padding: var(--space-2);
+  border-bottom: var(--border-hairline) solid var(--rule);
+}
+
+.ds-table th {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: var(--ink-muted);
+}

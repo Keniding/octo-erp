@@ -1,0 +1,35 @@
+.ds-callout {
+  padding: var(--space-4);
+  border-radius: var(--radius-none);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--on-status);
+}
+
+.ds-callout__word {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ds-callout__title {
+  font-family: var(--font-display);
+  font-size: 18px;
+}
+
+.ds-callout--note {
+  background: var(--status-note);
+}
+.ds-callout--valid {
+  background: var(--status-valid);
+}
+.ds-callout--warning {
+  background: var(--status-warning);
+}
+.ds-callout--critical {
+  background: var(--status-critical);
+  color: var(--on-accent);
+}

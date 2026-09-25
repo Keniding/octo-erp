@@ -1,0 +1,88 @@
+.app-shell {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell__header {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .app-shell__header {
+    grid-template-columns: 2fr 1fr;
+  }
+}
+
+.app-shell__brand-panel {
+  background: var(--accent-field);
+  color: var(--on-accent-field);
+  padding: var(--space-8) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-shell__brand-panel .ds-label {
+  color: var(--on-accent-field);
+}
+
+.app-shell__brand-title {
+  color: var(--on-accent-field);
+  margin: 0;
+}
+.app-shell__brand-title em {
+  font-style: italic;
+  color: var(--color-bone-parchment, #faf6f0);
+}
+
+.app-shell__nav-panel {
+  background: var(--color-seaglass-mist, #bdd2cb);
+  color: var(--ink);
+  padding: var(--space-8) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.app-shell__nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.app-shell__nav-link {
+  display: inline-block;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+  text-decoration: none;
+  padding: var(--space-1) 0;
+  border-bottom: var(--border-hairline) solid transparent;
+}
+.app-shell__nav-link:hover {
+  text-decoration: underline;
+}
+.app-shell__nav-link--active {
+  border-bottom-color: var(--ink);
+}
+
+.app-shell__main {
+  flex: 1;
+  padding: var(--space-4);
+  max-width: 1180px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+@media (min-width: 768px) {
+  .app-shell__main {
+    padding: var(--space-8);
+  }
+}
