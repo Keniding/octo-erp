@@ -85,21 +85,42 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  /* el fieldset puede ser más angosto que su contenido en pantallas muy
+     chicas (inputs con min-width); permite que el contenedor scrollee en
+     vez de desbordar la página. */
+  max-width: 100%;
 }
 
 .variant-row {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--space-2);
+  gap: var(--space-2) var(--space-4);
   align-items: end;
   border-bottom: var(--border-hairline) solid var(--grid-line);
-  padding-bottom: var(--space-2);
+  padding-bottom: var(--space-4);
+}
+
+@media (min-width: 480px) {
+  .variant-row {
+    /* De a dos columnas en mobile grande / tablet chica en vez de saltar
+       directo a seis: cada campo sigue siendo legible sin comprimirse. */
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (min-width: 768px) {
   .variant-row {
-    grid-template-columns: repeat(6, 1fr);
+    /* auto-fit en vez de un repeat(6, 1fr) fijo: cada campo se estabiliza
+       en ~180px con aire real (hasta 6 por fila en desktop) en vez de
+       estirarse a lo ancho del contenedor o apretarse en tablet. */
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   }
+}
+
+.variant-row .ds-button {
+  /* "Quitar variante"/"Quitar" queda alineado con la base de los inputs
+     de su fila en vez de ocupar una columna completa. */
+  justify-self: start;
 }
 
 .ds-table {

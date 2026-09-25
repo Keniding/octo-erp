@@ -5,6 +5,10 @@
   border: var(--border-hairline) solid var(--ink);
   cursor: pointer;
   transition: background-color 0.1s ease, color 0.1s ease;
+  /* Nunca se estira dentro de un contenedor flex en columna (ver
+     .variant-fieldset): el botón siempre mide su contenido. */
+  align-self: flex-start;
+  flex-shrink: 0;
 }
 
 .ds-button--md {

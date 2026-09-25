@@ -4,6 +4,16 @@
 
 ## Hecho
 
+- Fix de responsividad en los formularios multi-fila (`ProductForm`,
+  `OrderForm` en `apps/web`): el botón "+ Agregar variante"/"+ Agregar
+  artículo" ya no se estiraba a todo el ancho del contenedor, y la grilla
+  de campos de cada variante/artículo pasó de saltar de 1 a 6 columnas
+  fijas en 768px a una grilla `auto-fit` que se adapta a tablet y desktop
+  sin comprimir los campos. Ver
+  `docs/decisions/003-formularios-responsive.md`. Verificado con capturas
+  de Playwright del formulario abierto en los 3 breakpoints
+  (`catalogo-formulario-*`, `pedidos-formulario-*` en `docs/screenshots/`).
+
 - Monorepo con npm workspaces: `packages/design-tokens`, `packages/shared`,
   `apps/web`, `apps/mobile`.
 - Design system del workspace leído y traducido a `tokens.json` / `tokens.css`
