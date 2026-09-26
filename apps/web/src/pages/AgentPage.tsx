@@ -1,4 +1,5 @@
 import { FormEvent, useRef, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { useErp } from "../api/ErpApiProvider";
 import { Button, Callout, GridPaper, Input, Label } from "../design-system";
 import "./agent-page.css";
@@ -84,10 +85,9 @@ export function AgentPage() {
       </div>
 
       <Callout tone="note" data-testid="agent-disclaimer">
-        Corre sobre un LLM real (Azure AI Foundry) que llama a las mismas tools MCP que
-        expone <code>/mcp</code>, no un set fijo de comandos — ver{" "}
-        <code>services/octo-erp-agent/src/octo_erp_agent/agent_chat.py</code>. Las acciones que
-        ejecuta son reales: quedan guardadas y el resto de la app las refleja en segundos.
+        Escribile como a una persona — entiende lenguaje natural, no hace falta usar un
+        comando exacto. Lo que hace queda guardado de verdad: el resto de la app lo refleja
+        en segundos.
       </Callout>
 
       <GridPaper className="section-block agent-panel" data-testid="agent-panel">
@@ -107,7 +107,9 @@ export function AgentPage() {
               <span className="agent-message__label text-label">
                 {message.from === "user" ? "Vos" : "Agente"}
               </span>
-              <p className="agent-message__text">{message.text}</p>
+              <div className="agent-message__text">
+                <ReactMarkdown>{message.text}</ReactMarkdown>
+              </div>
             </div>
           ))}
           {sending && (
