@@ -1,6 +1,17 @@
 # Estado del proyecto
 
-Última actualización: 2026-09-25.
+Última actualización: 2026-09-26.
+
+## Planificado (no implementado)
+
+- **Agente de IA + MCP + Cosmos DB** para dar capacidades conversacionales sobre el ERP
+  (catálogo/inventario/pedidos), con MCP nativo (Cosmos DB) + MCP custom (reglas de negocio
+  del ERP) y Azure AI Foundry, siguiendo los patrones ya probados del proyecto hermano
+  `oraculo`. Especificación completa en `oraculo/docs/10-especificacion-2-agente-octo-erp.md`;
+  puntero y decisión bloqueante (¿Cosmos DB reemplaza el store en memoria o es una réplica?)
+  en [`docs/decisions/004-agente-ia-mcp-cosmosdb.md`](decisions/004-agente-ia-mcp-cosmosdb.md).
+  Sin código todavía — pendiente del proyecto de ejemplo del usuario y de resolver esa
+  decisión.
 
 ## Hecho
 
