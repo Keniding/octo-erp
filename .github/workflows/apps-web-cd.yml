@@ -1,0 +1,63 @@
+name: apps/web CD
+
+# Build de apps/web y deploy al contenedor $web del Storage Account que sirve el static
+# website (https://stoctoerpinc.z5.web.core.windows.net/) — ver
+# docs/decisions/009-deploy-automatico-apps-web.md.
+#
+# Esto NO existía hasta esta decisión: octo-erp-agent-cd.yml (el otro workflow) solo
+# despliega services/octo-erp-agent (API/MCP en Azure Functions); el frontend se subía a
+# mano. Consecuencia real observada: un cambio en apps/web (la sección "Agente") quedó
+# pusheado y con su propio CI en verde, pero el sitio público seguía sirviendo la versión
+# vieja porque nada lo redesplegaba.
+on:
+  push:
+    branches:
+      - claude/tender-faraday-fyyif3
+    paths:
+      - "apps/web/**"
+      - "packages/**"
+      - ".github/workflows/apps-web-cd.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: apps-web-cd
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      # Baked en build time por Vite (import.meta.env.VITE_API_BASE_URL) — no es un secreto,
+      # es la URL pública de la API ya desplegada por octo-erp-agent-cd.yml. Fijo en vez de
+      # una var de repo por la misma razón que ya documentó infra/main.bicep para
+      # functionAppName: no tocar salvo necesidad, para no reabrir la inestabilidad de
+      # deploy que ya se investigó a fondo (docs/decisions/007-rest-api-para-apps-web.md).
+      VITE_API_BASE_URL: https://octo-erp-inc.azurewebsites.net
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run build:web
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # --auth-mode login (Entra ID vía OIDC, nunca una account key) requiere el rol de
+      # datos "Storage Blob Data Contributor" sobre stoctoerpinc — el Contributor de
+      # resource group que ya tiene este service principal (decisión 006) es control-plane
+      # y NO alcanza para leer/escribir blobs vía Entra ID. Si este paso falla con
+      # "AuthorizationPermissionMismatch", ese rol es lo que falta — ver decisión 009.
+      - name: Subir apps/web/dist al contenedor $web (Azure Storage static website)
+        run: |
+          az storage blob upload-batch \
+            --account-name stoctoerpinc \
+            --auth-mode login \
+            --destination '$web' \
+            --source apps/web/dist \
+            --overwrite

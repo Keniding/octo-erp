@@ -26,7 +26,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v3
       - run: uv sync
-      - run: uv run pytest tests/test_service.py tests/test_mcp_server.py tests/test_repositories_conform_to_protocol.py -v
+      # Todo lo que NO sea test_cosmos_integration.py (ese va en el job de abajo, con OIDC).
+      # Antes esto listaba los archivos a mano y se quedó desactualizado — test_rest_api.py
+      # y test_agent_chat.py nunca corrieron en CI a pesar de que la corrida se veía en
+      # verde. --ignore evita que vuelva a pasar si se agrega un archivo de test nuevo.
+      - run: uv run pytest --ignore=tests/test_cosmos_integration.py -v
 
   integration-cosmos:
     # tests/test_cosmos_integration.py contra la cuenta real de Cosmos DB (rg-octo-erp-dev,

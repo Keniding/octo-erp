@@ -59,10 +59,20 @@
   de Playwright real que abre dos pestañas y confirma la propagación sin que la segunda
   navegue nunca**. 20 tests nuevos (15 backend + 5 e2e), suite completa en verde (45+4
   backend, 28 e2e).
+- **CD de `apps/web` (nuevo, decisión 009) — bloqueado en un role assignment**: el sitio
+  público seguía sin la sección "Agente" después de la decisión 008 porque
+  `octo-erp-agent-cd.yml` nunca desplegó el frontend — solo la API/MCP. Se agregó
+  `apps-web-cd.yml` (build de `apps/web` + `az storage blob upload-batch` al contenedor
+  `$web` de `stoctoerpinc`, autenticado por OIDC). Probablemente necesita un role
+  assignment nuevo (`Storage Blob Data Contributor` sobre `stoctoerpinc`) que el dueño de la
+  cuenta tiene que correr — comando exacto en la decisión 009. También se encontró y
+  arregló que `octo-erp-agent-ci.yml` nunca corría `test_rest_api.py` ni
+  `test_agent_chat.py` (lista de archivos a mano, desactualizada) a pesar de verse en verde.
 - **Pendiente**: `apps/mobile` sigue sin conectarse a Azure (fuera de alcance de esta
   sesión, ver decisión 007); auth Entra ID/Easy Auth de cara al agente/Foundry; conectar el
-  agente a un LLM real (Azure AI Foundry) en vez del intérprete de comandos actual; y el
-  proyecto de ejemplo del usuario para el mecanismo exacto de esa auth. Especificación
+  agente a un LLM real (Azure AI Foundry) en vez del intérprete de comandos actual; el role
+  assignment de la decisión 009 (bloqueante para que el sitio público se actualice solo); y
+  el proyecto de ejemplo del usuario para el mecanismo exacto de esa auth. Especificación
   completa en `oraculo/docs/10-especificacion-2-agente-octo-erp.md`.
 
 ## Hecho
