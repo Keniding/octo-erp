@@ -18,6 +18,17 @@
   (14 en modo sin LLM + 4 contra el LLM real, opt-in con `RUN_LLM_INTEGRATION_TESTS=1`).
 - Dos tools MCP nuevas agregadas: `adjust_material_stock`, `list_orders`, más
   `find_variant_by_sku` expuesta como tool (ya existía en el dominio).
+- **Deuda técnica documentada, no evadida**: el servidor MCP (`mcp_server.py`) sigue
+  desplegado *dentro* de la misma Function App que el agente y la API REST (un cliente MCP
+  en memoria, no HTTP externo) — a diferencia de `oraculo`, que despliega su MCP como
+  Function App separada. Decisión explícita de esta sesión: no crear otro recurso de Azure
+  Functions ahora (ver el historial de fallas de deploy en decisión 007) — se retoma en otra
+  sesión. Ver [`docs/marco/07-aplicado-a-octo-erp.md`](marco/07-aplicado-a-octo-erp.md) para
+  el detalle completo de qué queda simplificado y por qué.
+- **Nuevo: [`docs/marco/`](marco/README.md)** — marco teórico completo (agentes de IA, MCP,
+  Azure AI Foundry, Microsoft Agent Framework, con foco en Python) para la charla del
+  usuario sobre agentes/orquestación/Python/MCP — separado de las decisiones técnicas
+  puntuales de este repo.
 
 ## Agente de IA + MCP + Cosmos DB (`services/octo-erp-agent/`)
 
