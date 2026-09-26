@@ -45,7 +45,8 @@ jobs:
             -f infra/main.bicep \
             -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}' \
                location="${{ vars.AZURE_LOCATION }}" \
-               corsAllowedOrigins="${{ vars.CORS_ALLOWED_ORIGINS }}"
+               corsAllowedOrigins="${{ vars.CORS_ALLOWED_ORIGINS }}" \
+               applicationInsightsConnectionString="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}"
 
   deploy-code:
     runs-on: ubuntu-latest
