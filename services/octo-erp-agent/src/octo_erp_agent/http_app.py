@@ -24,9 +24,13 @@ from .rest_api import api_routes
 # hosting, no esta capa de aplicación). Por eso el origen permitido es explícito y acotado a
 # los puertos de dev de Vite en vez de "*" — cualquier despliegue real de apps/web agrega su
 # origen acá vía CORS_ALLOWED_ORIGINS.
+_DEFAULT_CORS_ORIGINS = (
+    "http://localhost:5173,http://localhost:4173,"
+    "https://stoctoerpinc.z5.web.core.windows.net"
+)
 _cors_origins = [
     o.strip()
-    for o in os.environ.get("CORS_ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:4173").split(",")
+    for o in os.environ.get("CORS_ALLOWED_ORIGINS", _DEFAULT_CORS_ORIGINS).split(",")
     if o.strip()
 ]
 

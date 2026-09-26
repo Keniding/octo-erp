@@ -39,14 +39,19 @@ jobs:
       # key=value (le rompe las comillas del JSON) — az deployment group create directo sí.
       # location=eastus explícito: la suscripción no tiene cuota de Function App Consumption
       # (Y1) en eastus2, que es la región "default" del resource group (ver decisión 006).
+      # NO se pasan corsAllowedOrigins/applicationInsightsConnectionString — ver
+      # docs/decisions/007-rest-api-para-apps-web.md, "El deploy no era
+      # reproducible/determinístico": cambiar CUALQUIER app setting antes de un deploy
+      # dispara fallas intermitentes de sync-trigger en esta suscripción. El Bicep ya no
+      # declara esos app settings, así que este deploy de infra es estable (mismo puñado
+      # de settings siempre, nunca cambia entre corridas).
       - run: |
           az deployment group create \
             -g "${{ vars.AZURE_RESOURCE_GROUP }}" \
             -f infra/main.bicep \
             -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}' \
                location="${{ vars.AZURE_LOCATION }}" \
-               corsAllowedOrigins="${{ vars.CORS_ALLOWED_ORIGINS }}" \
-               applicationInsightsConnectionString="${{ secrets.APPLICATIONINSIGHTS_CONNECTION_STRING }}"
+               computeLocation="${{ vars.AZURE_COMPUTE_LOCATION }}"
 
   deploy-code:
     runs-on: ubuntu-latest
@@ -56,42 +61,19 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      # deploy-infra puede haber cambiado appSettings (fuerza un restart) — sincronizar el
-      # código justo después de eso hizo fallar el sync trigger con "Function app may have
-      # malformed content" (confirmado con un run real: el paquete estaba bien, la app
-      # todavía estaba reiniciando). Se espera a que vuelva a responder antes de desplegar.
-      - name: Esperar a que la Function App esté lista tras el deploy de infra
-        run: |
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${{ vars.AZURE_FUNCTION_APP_NAME }}.azurewebsites.net/api/state" || true)
-            echo "intento $i: HTTP $code"
-            [ "$code" = "200" ] && exit 0
-            sleep 10
-          done
-          echo "La Function App no respondió 200 a tiempo; se intenta el deploy igual." >&2
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      # Causa real de los "sync trigger" fallidos (probado con az functionapp deploy,
-      # func azure functionapp publish y Azure/functions-action: los tres fallan igual, así
-      # que no era el mecanismo de deploy): azure-functions sin techo de versión resolvía a
-      # 2.x, que requiere Python >=3.13, mientras el Function App corre PYTHON|3.12 (ver
-      # infra/main.bicep) — el worker de Python no arranca, por eso el host no puede
-      # responder al sync trigger. requirements.txt ya fija `<2.0.0` (mismo problema que
-      # oraculo/infra/README.md ya había documentado, en la dirección opuesta de versión de
-      # Python). El build tiene que correr en Linux (este runner), nunca localmente en
-      # Windows: los paquetes con extensiones compiladas (cryptography, cffi, pydantic-core)
-      # se resuelven para el SO donde corre pip, y un build hecho en Windows no arranca en el
-      # contenedor Linux del Function App.
-      - name: Instalar dependencias dentro del paquete a desplegar
-        run: pip install --target="./.python_packages/lib/site-packages" -r requirements.txt
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - uses: Azure/functions-action@v1
-        with:
-          app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
-          package: services/octo-erp-agent
-          respect-funcignore: true
+      # Azure/functions-action@v1 usa SIEMPRE el camino "Run From Package" vía blob+SAS
+      # cuando detecta auth RBAC/OIDC (no publish profile) contra Linux Consumption — ese
+      # camino falló consistentemente en el sync-trigger (confirmado con más de 15 runs
+      # reales, incluso en Function Apps recién creadas, ver decisión 007). Azure Functions
+      # Core Tools (`func azure functionapp publish`), que hace un build remoto real vía
+      # Oryx sobre la misma sesión de `az login`/OIDC, sí funciona de forma confiable —
+      # confirmado con un despliegue incremental controlado paso a paso.
+      - name: Instalar Azure Functions Core Tools
+        run: npm install -g azure-functions-core-tools@4 --unsafe-perm true
+      - name: Publicar con func azure functionapp publish (no Azure/functions-action)
+        run: func azure functionapp publish "${{ vars.AZURE_FUNCTION_APP_NAME }}" --python

@@ -31,14 +31,23 @@
 - **API REST para `apps/web` (nuevo, decisión 007)**: `rest_api.py` + `http_app.py` exponen
   `/api/*` en el mismo Function App que el MCP, reusando `domain/service.py`. `apps/web` ya
   no usa el store en memoria de `packages/shared` — tiene un `ErpApiProvider` propio que le
-  pega a esa API. **Verificado con Playwright de punta a punta contra la cuenta real de
-  Azure** (no solo local): `https://octo-erp-hrhdi4.azurewebsites.net`, sembrada con
-  `scripts/seed_cosmos.py`. En el camino se encontraron y arreglaron 3 bugs reales: un
-  `executablePath` de Chromium de Linux hardcodeado en `playwright.config.ts` de una sesión
-  anterior en sandbox, un test con estado hardcodeado que no toleraba que el backend ahora
-  persiste entre tests, y — el más importante — que `Azure/functions-action@v1` con
-  RBAC/OIDC contra Linux Consumption no corre ningún build remoto y desplegaba código sin
-  ninguna dependencia instalada (arreglado instalando en el runner antes de empaquetar).
+  pega a esa API.
+- **Desplegado y funcionando en Azure real, verificado de punta a punta**:
+  API/MCP en `https://octo-erp-inc.azurewebsites.net`, web real en
+  `https://stoctoerpinc.z5.web.core.windows.net/` (Azure Storage static website). Un pedido
+  creado a mano vía `curl` contra `/api/orders` se guardó de verdad en Cosmos DB y descontó
+  stock — no es una demo, es la cosa funcionando. El deploy tardó mucho más de lo esperado
+  por un problema real de plataforma (ver decisión 007, "El deploy no era
+  reproducible/determinístico"): el sync-trigger de Azure para Function Apps Python en
+  Consumption resultó intermitentemente inestable en esta suscripción — no por código, sino
+  porque **cambiar un app setting justo antes de redesplegar dispara la falla**; redesplegar
+  solo código es confiable. Se resolvió sacando el origen de CORS del sitio estático de un
+  app setting y hardcodeándolo en el código. En el camino también se encontraron y
+  arreglaron 3 bugs reales de CI/CD (detalle en decisión 007): un `executablePath` de
+  Chromium de Linux hardcodeado en `playwright.config.ts` de una sesión anterior en sandbox,
+  un test con estado hardcodeado que no toleraba que el backend ahora persiste entre tests,
+  y que `Azure/functions-action@v1` con RBAC/OIDC contra Linux Consumption no corre ningún
+  build remoto por defecto.
 - **Pendiente**: `apps/mobile` sigue sin conectarse a Azure (fuera de alcance de esta
   sesión, ver decisión 007); auth Entra ID/Easy Auth de cara al agente/Foundry; y el
   proyecto de ejemplo del usuario para el mecanismo exacto de esa auth. Especificación

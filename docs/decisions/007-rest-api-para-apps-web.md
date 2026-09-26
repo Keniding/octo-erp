@@ -1,7 +1,10 @@
 # 007 — API REST en el mismo Function App para que apps/web hable con lo desplegado en Azure
 
-**Estado:** implementado, probado con Playwright de punta a punta contra la cuenta real de
-Azure (no solo local) — ver "Verificado corriendo de verdad" más abajo.
+**Estado:** implementado y funcionando en Azure real. URL actual:
+**`https://octo-erp-inc.azurewebsites.net`** (MCP en `/mcp`, REST en `/api/*`). Web real
+desplegada en **`https://stoctoerpinc.z5.web.core.windows.net/`** (Azure Storage static
+website), apuntando a esa API. Ver "El deploy no era reproducible/determinístico" más abajo
+para la historia completa de por qué la URL cambió varias veces durante la sesión.
 
 ## Contexto
 
@@ -90,6 +93,44 @@ todavía lo usa (ver "Trade-offs aceptados"). Los 5 puntos de uso en `apps/web`
    referencia a tiempo, así que se perdió ~1 hora reintentando mecanismos de deploy en vez
    de mirar la causa real. Fijado con el mismo techo de versión
    (`azure-functions>=1.21.0,<2.0.0`).
+
+## El deploy no era reproducible/determinístico — la causa real final
+
+Después del punto 4 (fix de versión de `azure-functions`), el deploy siguió fallando de
+forma intermitente durante horas — no por ese bug ni por ningún otro bug de código. Se
+probó, en orden, y se descartó cada hipótesis con evidencia real (no supuesta):
+
+- **Región** (`eastus` → `westus2`): un Function App trivial (`hello world`) funcionaba al
+  instante en cualquier región; el proyecto real fallaba igual en ambas. Descartado.
+- **Estado corrupto del recurso**: se borró y recreó la Function App, después también el
+  Storage Account — mismo error exacto. Descartado.
+- **Nombre del recurso "maldito"**: un nombre nunca usado antes funcionaba al instante con
+  el código real completo (REST + MCP + Cosmos) — pero el MISMO nombre, en un intento
+  posterior, volvía a fallar. Esto llevó a la hipótesis correcta.
+- **Mecanismo de deploy**: `Azure/functions-action@v1`, `az functionapp deploy`
+  (OneDeploy), `az functionapp deployment source config-zip` y `func azure functionapp
+  publish` fallaban todos igual contra un nombre ya tocado. Descartado como causa única.
+- **Rate limiting de Azure**: tras ~25 intentos de sync-trigger en la sesión, un intento
+  devolvió explícitamente `TooManyRequests` — real, pero un intento posterior (tras 10 min
+  de enfriamiento) volvió a fallar con `BadRequest`, así que no explicaba todo.
+
+**El patrón real, confirmado con un experimento incremental controlado** (desplegar
+funcionalidad de a una pieza, mismo patrón que usa `oraculo`, sobre un recurso nuevo
+`octo-erp-inc`): agregar código nuevo y redesplegar es **confiable** (5/5 éxitos
+instantáneos: mínimo → +Cosmos → +API REST → revertir CORS → +CORS hardcodeado en código).
+**Cambiar un app setting (`az functionapp config appsettings set`) y redesplegar justo
+después es lo que falla intermitentemente** (3/3 fallos exactos al tocar
+`CORS_ALLOWED_ORIGINS` como app setting, incluso solo, incluso con la config revertida
+después). La solución fue simplemente **no depender de un app setting para el origen de
+CORS del sitio estático** — se hardcodeó como default en el propio código
+(`http_app.py`, `_DEFAULT_CORS_ORIGINS`), así el deploy que lo aplica es un cambio de
+código (confiable), no un cambio de config (inestable).
+
+No queda explicado el mecanismo exacto de por qué un cambio de app setting seguido de un
+redeploy dispara esto en la plataforma de Azure para esta suscripción — quedó como una regla
+empírica probada, no como una causa de bajo nivel identificada. Si hay que agregar un app
+setting nuevo en el futuro: cambiarlo, esperar, y **no** asumir que el próximo deploy va a
+funcionar al primer intento.
 
 ## Pendiente / trade-offs aceptados
 

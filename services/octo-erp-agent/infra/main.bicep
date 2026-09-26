@@ -11,11 +11,20 @@
 //   az deployment group create -g rg-octo-erp-dev -f infra/main.bicep \
 //     -p dataContributorPrincipalIds="['<tu-object-id>','<object-id-del-service-principal-de-CI>']"
 
-@description('Región de despliegue. Por defecto, la misma del resource group.')
+@description('Región de Cosmos DB. Por defecto, la misma del resource group. No cambiar una vez creada la cuenta — Cosmos DB no permite recrearla con el mismo nombre en otra región.')
 param location string = resourceGroup().location
 
-@description('Nombre base para los recursos nuevos (Function App, Storage Account, App Service Plan, Cosmos DB).')
+@description('Región de los recursos de cómputo (Storage, App Service Plan, Function App) — separada de `location` porque hubo un problema de plataforma específico de `eastus` para esta suscripción con el sync-trigger de Function Apps Python en Consumption (ver docs/decisions/007-rest-api-para-apps-web.md): la Function App se movió a otra región sin tener que recrear Cosmos DB. Por defecto, igual a `location`.')
+param computeLocation string = location
+
+@description('Nombre base para Cosmos DB (no tocar — cambia el nombre de la cuenta existente con los datos ya sembrados).')
 param baseName string = 'octo-erp'
+
+@description('Nombre exacto de la Function App. Fijo en vez de autogenerado con hash — ver docs/decisions/007-rest-api-para-apps-web.md, "El deploy no era reproducible/determinístico": redesplegar código es confiable, pero cambiar un app setting justo antes de un deploy dispara fallas intermitentes de sync-trigger en esta suscripción, y una vez que falla contra un nombre, ese nombre tiende a seguir fallando. `octo-erp-inc` es el nombre bajo el que se confirmó, con un despliegue incremental controlado, que todo (REST + MCP + Cosmos + CORS hardcodeado en código) funciona de punta a punta — no renombrar sin necesidad, y evitar tocar app settings salvo que sea imprescindible.')
+param functionAppName string = 'octo-erp-inc'
+
+@description('Nombre exacto del Storage Account que respalda la Function App de arriba.')
+param storageAccountNameOverride string = 'stoctoerpinc'
 
 @description('Nombre de la base de datos de Cosmos DB.')
 param cosmosDatabaseName string = 'octo-erp'
@@ -23,17 +32,9 @@ param cosmosDatabaseName string = 'octo-erp'
 @description('Object ids (Entra ID) adicionales a los que se les otorga el rol Cosmos DB Built-in Data Contributor sobre la cuenta — tu usuario para pruebas/desarrollo local y el service principal de OIDC de GitHub Actions para la integración de CI. La identidad administrada de la Function App siempre se agrega, sin necesidad de listarla acá.')
 param dataContributorPrincipalIds array = []
 
-@description('Orígenes permitidos por CORS para la API REST (/api/*) que consume apps/web — ver rest_api.py/http_app.py y docs/decisions/007-rest-api-para-apps-web.md. Nota importante: appSettings en Microsoft.Web/sites es un reemplazo completo, no un merge — cualquier origen agregado a mano con `az functionapp config appsettings set` se pierde en el próximo deploy si no está también acá.')
-param corsAllowedOrigins string = 'http://localhost:5173,http://localhost:4173'
-
-@description('Connection string de Application Insights para diagnóstico real del worker de Python (logs/exceptions vía az monitor app-insights query) — vacío por defecto. Mismo motivo que corsAllowedOrigins: si se setea a mano con appsettings set en vez de acá, el próximo deploy de este Bicep lo borra.')
-@secure()
-param applicationInsightsConnectionString string = ''
-
 var uniqueSuffix = uniqueString(resourceGroup().id)
-var storageAccountName = toLower('st${replace(baseName, '-', '')}${take(uniqueSuffix, 6)}')
-var appServicePlanName = '${baseName}-plan'
-var functionAppName = '${baseName}-${take(uniqueSuffix, 6)}'
+var storageAccountName = storageAccountNameOverride
+var appServicePlanName = '${functionAppName}-plan'
 var cosmosAccountName = toLower('${baseName}-cosmos-${take(uniqueSuffix, 6)}')
 
 // Rol built-in "Cosmos DB Built-in Data Contributor" — lectura/escritura de datos (no de
@@ -42,7 +43,7 @@ var cosmosDataContributorRoleId = '00000000-0000-0000-0000-000000000002'
 
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: storageAccountName
-  location: location
+  location: computeLocation
   sku: {
     name: 'Standard_LRS'
   }
@@ -55,7 +56,7 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
   name: appServicePlanName
-  location: location
+  location: computeLocation
   sku: {
     name: 'Y1'
     tier: 'Dynamic'
@@ -68,7 +69,7 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2023-12-01' = {
 
 resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
   name: functionAppName
-  location: location
+  location: computeLocation
   kind: 'functionapp,linux'
   identity: {
     type: 'SystemAssigned'
@@ -82,10 +83,26 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'FUNCTIONS_WORKER_RUNTIME', value: 'python' }
         { name: 'FUNCTIONS_EXTENSION_VERSION', value: '~4' }
         { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}' }
-        { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '1' }
+        // NO pre-setear WEBSITE_RUN_FROM_PACKAGE=1 acá — causa real encontrada y probada
+        // (ver docs/decisions/007-rest-api-para-apps-web.md): con este setting ya presente,
+        // tanto `func azure functionapp publish` como Azure/functions-action usan el modo
+        // "Run From Package" vía blob+SAS, que falló consistentemente en el sync-trigger
+        // (6+ intentos, 3 mecanismos de deploy, incluso en Function Apps recién creadas).
+        // Sin este setting, el deploy hace un build remoto completo (Oryx/squashfs) y el
+        // sync-trigger funciona al instante — confirmado en 2/2 pruebas. El deploy es quien
+        // gestiona este setting dinámicamente, no la infra.
+        // CORS_ALLOWED_ORIGINS y APPLICATIONINSIGHTS_CONNECTION_STRING deliberadamente NO
+        // están acá — ver docs/decisions/007-rest-api-para-apps-web.md, "El deploy no era
+        // reproducible/determinístico": cambiar CUALQUIER app setting justo antes de un
+        // deploy dispara fallas intermitentes de sync-trigger en esta suscripción (3/3
+        // fallos reproducidos). El origen de CORS del sitio estático quedó hardcodeado en
+        // código (http_app.py, _DEFAULT_CORS_ORIGINS) — un cambio de código, no de config,
+        // que sí es confiable. Si hace falta Application Insights de nuevo para
+        // diagnóstico, configurarlo a mano vía `az functionapp config appsettings set` y
+        // asumir que el próximo deploy de este Bicep no lo va a tocar (no está en esta
+        // lista), pero que el próximo *cambio de config* después de eso puede requerir
+        // varios intentos de redeploy de código para asentarse.
         { name: 'COSMOS_ENDPOINT', value: cosmosAccount.properties.documentEndpoint }
-        { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
-        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: applicationInsightsConnectionString }
       ]
     }
   }
