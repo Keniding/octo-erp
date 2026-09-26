@@ -36,6 +36,10 @@ var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = storageAccountNameOverride
 var appServicePlanName = '${functionAppName}-plan'
 var cosmosAccountName = toLower('${baseName}-cosmos-${take(uniqueSuffix, 6)}')
+// primaryEndpoints.web viene con "/" final (ej. "https://foo.z5.web.core.windows.net/");
+// un origen de CORS no lleva esa barra — bicep no tiene trimEnd, así que se recorta a mano.
+var staticWebsiteEndpoint = storageAccount.properties.primaryEndpoints.web
+var staticWebsiteOrigin = substring(staticWebsiteEndpoint, 0, length(staticWebsiteEndpoint) - 1)
 
 // Rol built-in "Cosmos DB Built-in Data Contributor" — lectura/escritura de datos (no de
 // control plane). Id fijo documentado por Microsoft, igual en toda cuenta de Cosmos DB.
@@ -104,6 +108,20 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         // varios intentos de redeploy de código para asentarse.
         { name: 'COSMOS_ENDPOINT', value: cosmosAccount.properties.documentEndpoint }
       ]
+      // CORS de PLATAFORMA (distinto del CORSMiddleware de Starlette en http_app.py) — el
+      // OPTIONS de un preflight real de browser nunca llega al código Python: Azure
+      // Functions lo intercepta y responde él mismo, y sin esto configurado responde un
+      // 204 vacío sin headers de CORS, lo que hace que el browser bloquee la request real
+      // ("Failed to fetch"). Confirmado con curl -v contra el preflight real. No es lo
+      // mismo que _DEFAULT_CORS_ORIGINS en http_app.py — hacen falta los dos: éste para que
+      // el preflight OPTIONS pase, el de Starlette para los headers en la respuesta real.
+      cors: {
+        allowedOrigins: [
+          'http://localhost:5173'
+          'http://localhost:4173'
+          staticWebsiteOrigin
+        ]
+      }
     }
   }
 }
