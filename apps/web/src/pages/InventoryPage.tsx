@@ -1,13 +1,9 @@
 import { FormEvent, useState } from "react";
-import { useErpStore } from "@octo-erp/shared";
+import { useErp } from "../api/ErpApiProvider";
 import { Button, Callout, Card, Input, Label, Select } from "../design-system";
 
 export function InventoryPage() {
-  const variants = useErpStore((s) => s.variants);
-  const materials = useErpStore((s) => s.materials);
-  const products = useErpStore((s) => s.products);
-  const adjustVariantStock = useErpStore((s) => s.adjustVariantStock);
-  const adjustMaterialStock = useErpStore((s) => s.adjustMaterialStock);
+  const { variants, materials, products, adjustVariantStock, adjustMaterialStock } = useErp();
 
   const [variantId, setVariantId] = useState(variants[0]?.id ?? "");
   const [delta, setDelta] = useState("1");
@@ -22,7 +18,7 @@ export function InventoryPage() {
     return products.find((p) => p.id === productId)?.name ?? "—";
   }
 
-  function handleAdjustVariant(event: FormEvent) {
+  async function handleAdjustVariant(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSuccess(null);
@@ -32,7 +28,7 @@ export function InventoryPage() {
       return;
     }
     try {
-      adjustVariantStock(variantId, amount, "ajuste-manual", note || undefined);
+      await adjustVariantStock(variantId, amount, "ajuste-manual", note || undefined);
       setSuccess("Stock actualizado.");
       setNote("");
     } catch (err) {
@@ -40,7 +36,7 @@ export function InventoryPage() {
     }
   }
 
-  function handleAdjustMaterial(event: FormEvent) {
+  async function handleAdjustMaterial(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSuccess(null);
@@ -50,7 +46,7 @@ export function InventoryPage() {
       return;
     }
     try {
-      adjustMaterialStock(materialId, amount, "recepcion");
+      await adjustMaterialStock(materialId, amount, "recepcion");
       setSuccess("Filamento actualizado.");
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo ajustar el material.");

@@ -1,13 +1,11 @@
 import { useState } from "react";
-import { useErpStore } from "@octo-erp/shared";
 import { formatCurrency } from "@octo-erp/shared";
+import { useErp } from "../api/ErpApiProvider";
 import { Button, Card, GridPaper, Label } from "../design-system";
 import { ProductForm } from "./ProductForm";
 
 export function CatalogPage() {
-  const products = useErpStore((s) => s.products);
-  const variants = useErpStore((s) => s.variants);
-  const materials = useErpStore((s) => s.materials);
+  const { products, variants, materials } = useErp();
   const [showForm, setShowForm] = useState(false);
 
   return (

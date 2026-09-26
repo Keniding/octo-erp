@@ -53,7 +53,18 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v3
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      # Azure/functions-action, autenticado por RBAC/OIDC (no publish profile) contra un
+      # Function App Linux Consumption, usa el modo "Run From Package" y NO corre ningún
+      # build remoto — scm-do-build-during-deployment/enable-oryx-build se ignoran en ese
+      # camino (confirmado con el log real del primer intento: solo zipea el código fuente
+      # sin instalar nada). Por eso las dependencias se instalan aquí, en el runner, antes
+      # de empaquetar — mismo patrón que documenta Microsoft para Python + RBAC + Linux
+      # Consumption. Ver docs/decisions/007-rest-api-para-apps-web.md.
+      - name: Instalar dependencias dentro del paquete a desplegar
+        run: pip install --target="./.python_packages/lib/site-packages" -r requirements.txt
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
@@ -63,5 +74,4 @@ jobs:
         with:
           app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
           package: services/octo-erp-agent
-          scm-do-build-during-deployment: true
-          enable-oryx-build: true
+          respect-funcignore: true

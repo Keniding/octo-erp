@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { Material, ProductCategory, useErpStore } from "@octo-erp/shared";
+import { Material, ProductCategory } from "@octo-erp/shared";
+import { useErp } from "../api/ErpApiProvider";
 import { Button, Input, Select, Callout } from "../design-system";
 
 const CATEGORIES: ProductCategory[] = [
@@ -30,7 +31,7 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ materials, onCreated }: ProductFormProps) {
-  const addProduct = useErpStore((s) => s.addProduct);
+  const { addProduct } = useErp();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [category, setCategory] = useState<ProductCategory>(CATEGORIES[0]);
@@ -52,7 +53,7 @@ export function ProductForm({ materials, onCreated }: ProductFormProps) {
     setVariants((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     if (!name.trim()) {
@@ -70,7 +71,7 @@ export function ProductForm({ materials, onCreated }: ProductFormProps) {
       }
     }
     try {
-      addProduct({
+      await addProduct({
         name: name.trim(),
         description: description.trim(),
         category,

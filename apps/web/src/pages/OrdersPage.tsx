@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { formatCurrency, formatDate, useErpStore } from "@octo-erp/shared";
+import { formatCurrency, formatDate } from "@octo-erp/shared";
+import { useErp } from "../api/ErpApiProvider";
 import { Button, Card, GridPaper, Label } from "../design-system";
 import { OrderForm } from "./OrderForm";
 
@@ -12,9 +13,7 @@ const STATUS_TONE: Record<string, "note" | "valid" | "warning" | "critical"> = {
 };
 
 export function OrdersPage() {
-  const orders = useErpStore((s) => s.orders);
-  const variants = useErpStore((s) => s.variants);
-  const products = useErpStore((s) => s.products);
+  const { orders, variants, products } = useErp();
   const [showForm, setShowForm] = useState(false);
 
   function variantLabel(variantId: string) {

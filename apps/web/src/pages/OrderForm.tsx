@@ -1,5 +1,6 @@
 import { FormEvent, useState } from "react";
-import { Product, ProductVariant, useErpStore } from "@octo-erp/shared";
+import { Product, ProductVariant } from "@octo-erp/shared";
+import { useErp } from "../api/ErpApiProvider";
 import { Button, Callout, Input, Select } from "../design-system";
 
 interface ItemDraft {
@@ -14,7 +15,7 @@ interface OrderFormProps {
 }
 
 export function OrderForm({ variants, products, onCreated }: OrderFormProps) {
-  const createOrder = useErpStore((s) => s.createOrder);
+  const { createOrder } = useErp();
   const [customerName, setCustomerName] = useState("");
   const [items, setItems] = useState<ItemDraft[]>([
     { variantId: variants[0]?.id ?? "", quantity: "1" },
@@ -38,7 +39,7 @@ export function OrderForm({ variants, products, onCreated }: OrderFormProps) {
     setItems((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault();
     setError(null);
     setSuccess(null);
@@ -51,7 +52,7 @@ export function OrderForm({ variants, products, onCreated }: OrderFormProps) {
       return;
     }
     try {
-      const order = createOrder({
+      const order = await createOrder({
         customerName: customerName.trim(),
         items: items.map((it) => ({
           variantId: it.variantId,

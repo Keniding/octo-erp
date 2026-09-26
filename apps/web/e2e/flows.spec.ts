@@ -57,10 +57,17 @@ test.describe("Ajuste de inventario", () => {
 
 test.describe("Creación de pedido", () => {
   test("crea un pedido y descuenta stock de la variante vendida", async ({ page }) => {
+    const variantId = "var-samurai-10-sin-pintar"; // primera opción del selector
+
+    // El backend ahora tiene estado real de servidor (no un store por-pestaña que se
+    // resetea): se lee el stock actual en vez de asumir el valor semilla, porque otro test
+    // de este mismo archivo (ajuste de inventario) puede haber corrido antes y mutado esta
+    // misma variante contra el mismo proceso.
+    await page.goto("/inventario");
+    const stockCell = page.getByTestId(`variant-stock-value-${variantId}`);
+    const before = Number(await stockCell.innerText());
+
     await page.goto("/pedidos");
-
-    const variantId = "var-samurai-10-sin-pintar"; // seed stock: 14, primera opción del selector
-
     await page.getByTestId("toggle-new-order").click();
     await expect(page.getByTestId("order-form")).toBeVisible();
 
@@ -74,7 +81,7 @@ test.describe("Creación de pedido", () => {
     await expect(page.getByTestId("order-list")).toContainText("Taller Origami");
 
     await page.getByTestId("nav-inventario").click();
-    await expect(page.getByTestId(`variant-stock-value-${variantId}`)).toHaveText("12");
+    await expect(page.getByTestId(`variant-stock-value-${variantId}`)).toHaveText(String(before - 2));
   });
 
   test("no permite pedir más unidades que el stock disponible", async ({ page }) => {
