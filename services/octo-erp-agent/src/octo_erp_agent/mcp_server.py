@@ -141,6 +141,52 @@ def adjust_variant_stock(variant_id: str, delta: int, reason: str, note: str | N
     return {"variant_id": variant.id, "new_stock_units": variant.stock_units}
 
 
+@mcp.tool()
+def adjust_material_stock(material_id: str, delta: int, reason: str, note: str | None = None) -> dict:
+    """Ajusta manualmente el stock de un material/filamento en gramos (ej. recepción de
+    bobina nueva, merma). `delta` positivo suma stock, negativo lo resta. `reason` debe ser
+    uno de: recepcion, ajuste-manual, venta, merma, produccion."""
+    try:
+        material = service.adjust_material_stock(
+            repo, material_id=material_id, delta=delta, reason=reason, note=note,  # type: ignore[arg-type]
+        )
+    except (InsufficientStockError, NotFoundError, ValidationError) as exc:
+        return {"error": str(exc)}
+    return {"material_id": material.id, "new_stock_grams": material.stock_grams}
+
+
+@mcp.tool()
+def list_orders() -> dict:
+    """Lista todos los pedidos existentes (más reciente primero), con su código, cliente,
+    estado y total. Útil para responder '¿qué pedidos hay?' o buscar uno por cliente."""
+    orders = list(reversed(repo.list_orders()))
+    return {
+        "orders": [
+            {
+                "order_id": o.id, "code": o.code, "customer_name": o.customer_name,
+                "status": o.status, "total_cents": o.total_cents,
+                "items": [{"variant_id": i.variant_id, "quantity": i.quantity} for i in o.items],
+            }
+            for o in orders
+        ]
+    }
+
+
+@mcp.tool()
+def find_variant_by_sku(sku: str) -> dict:
+    """Busca una variante por SKU exacto y devuelve su detalle completo (nombre, precio,
+    material, stock, umbral). Útil antes de crear un pedido o ajustar stock, para confirmar
+    que el SKU existe y ver su estado actual."""
+    variant = service.find_variant_by_sku(repo, sku)
+    if variant is None:
+        return {"error": f"No encontré ninguna variante con el SKU '{sku}'."}
+    return {
+        "variant_id": variant.id, "product_id": variant.product_id, "name": variant.name,
+        "sku": variant.sku, "price_cents": variant.price_cents, "material_id": variant.material_id,
+        "stock_units": variant.stock_units, "reorder_threshold": variant.reorder_threshold,
+    }
+
+
 def _reject_get(app):
     """Idéntico a oraculo/mcp_server.py — el transporte streamable-http abre un stream SSE
     de larga duración en cada GET; en Azure Functions (serverless) eso se queda colgado

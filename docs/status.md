@@ -2,6 +2,23 @@
 
 Última actualización: 2026-09-26.
 
+## Agente conversacional con LLM real (nuevo — decisión 010)
+
+- La sección "Agente" de `apps/web` ya no es un intérprete de comandos por regex (decisión
+  008) como único camino — ahora usa un LLM real (`gpt-5.4-nano`, Azure AI Foundry, recurso
+  dedicado `octo-erp-ai` en `rg-octo-erp-dev`, separado del de `oraculo`), con tool-calling
+  ejecutado *vía protocolo MCP real* (cliente MCP en memoria contra el mismo servidor MCP
+  que expone `/mcp`) — nunca llamadas directas a Python en paralelo. Auth 100% Entra ID
+  (Managed Identity / `az login`, sin keys).
+- **Sin fallback silencioso si el LLM falla** — pedido explícito del usuario, ver decisión
+  010: un error visible en vez de una respuesta que coincide por casualidad con un patrón
+  fijo y aparenta que el modelo entendió.
+- Probado contra Azure real: creación de pedidos y consultas en lenguaje natural sin SKU
+  exacto (algo que el intérprete por regex anterior no podía resolver). 18 tests reales
+  (14 en modo sin LLM + 4 contra el LLM real, opt-in con `RUN_LLM_INTEGRATION_TESTS=1`).
+- Dos tools MCP nuevas agregadas: `adjust_material_stock`, `list_orders`, más
+  `find_variant_by_sku` expuesta como tool (ya existía en el dominio).
+
 ## Agente de IA + MCP + Cosmos DB (`services/octo-erp-agent/`)
 
 - **Decisión tomada**: Cosmos DB es la única fuente de verdad de datos de negocio; el

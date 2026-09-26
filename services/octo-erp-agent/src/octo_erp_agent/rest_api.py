@@ -154,7 +154,7 @@ async def agent_chat_endpoint(request: Request) -> JSONResponse:
     message = body.get("message", "")
     if not isinstance(message, str):
         return JSONResponse({"error": "'message' debe ser un string."}, status_code=400)
-    result = agent_chat.handle_message(repo, message)
+    result = await agent_chat.handle_message(repo, message)
     return JSONResponse({"reply": result.reply, "action": result.action})
 
 

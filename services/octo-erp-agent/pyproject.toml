@@ -12,6 +12,7 @@ dependencies = [
     # pisar este error (503 persistente por el mismo desajuste de versión).
     "azure-functions>=1.21.0,<2.0.0",
     "python-dotenv>=1.0.1",
+    "openai>=1.50.0",
 ]
 
 [dependency-groups]

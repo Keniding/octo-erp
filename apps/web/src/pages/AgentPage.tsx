@@ -84,8 +84,9 @@ export function AgentPage() {
       </div>
 
       <Callout tone="note" data-testid="agent-disclaimer">
-        Hoy interpreta un set fijo de comandos (no es un modelo de lenguaje todavía — ver{" "}
-        <code>services/octo-erp-agent/src/octo_erp_agent/agent_chat.py</code>). Las acciones que
+        Corre sobre un LLM real (Azure AI Foundry) que llama a las mismas tools MCP que
+        expone <code>/mcp</code>, no un set fijo de comandos — ver{" "}
+        <code>services/octo-erp-agent/src/octo_erp_agent/agent_chat.py</code>. Las acciones que
         ejecuta son reales: quedan guardadas y el resto de la app las refleja en segundos.
       </Callout>
 
