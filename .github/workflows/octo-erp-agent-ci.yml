@@ -1,0 +1,56 @@
+name: octo-erp-agent CI
+
+# Reemplaza la necesidad de correr `uv run pytest` local antes de cada cambio (ver
+# services/octo-erp-agent/README.md) — corre en cada push/PR que toque el paquete.
+on:
+  push:
+    paths:
+      - "services/octo-erp-agent/**"
+      - ".github/workflows/octo-erp-agent-ci.yml"
+  pull_request:
+    paths:
+      - "services/octo-erp-agent/**"
+      - ".github/workflows/octo-erp-agent-ci.yml"
+
+defaults:
+  run:
+    working-directory: services/octo-erp-agent
+
+jobs:
+  unit-tests:
+    # Reglas de negocio (domain/service.py) + protocolo MCP real (tests/test_mcp_server.py)
+    # + conformidad de contrato de repositorios — todo contra InMemoryRepository, sin Azure.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - run: uv sync
+      - run: uv run pytest tests/test_service.py tests/test_mcp_server.py tests/test_repositories_conform_to_protocol.py -v
+
+  integration-cosmos:
+    # tests/test_cosmos_integration.py contra la cuenta real de Cosmos DB (rg-octo-erp-dev,
+    # ver services/octo-erp-agent/infra/main.bicep) — autenticado por OIDC (Entra ID),
+    # nunca con una key. Se salta en PRs desde forks: no comparten el trust de OIDC de este
+    # repo y el federated credential (repo:Keniding/octo-erp:pull_request) no los cubre.
+    runs-on: ubuntu-latest
+    needs: unit-tests
+    if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: uv sync
+      - run: uv run pytest tests/test_cosmos_integration.py -v
+        env:
+          COSMOS_ENDPOINT: ${{ vars.COSMOS_ENDPOINT }}

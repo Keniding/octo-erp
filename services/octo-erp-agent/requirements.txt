@@ -1,0 +1,9 @@
+# Azure Functions Python worker instala desde este archivo (no lee pyproject.toml).
+# El paquete propio se instala con "." (build vía hatchling, ver pyproject.toml) para que
+# `function_app.py` pueda hacer `from octo_erp_agent.mcp_server import asgi_app`.
+azure-functions>=1.21.0
+mcp>=1.2.0
+azure-cosmos>=4.7.0
+azure-identity>=1.19.0
+python-dotenv>=1.0.1
+.

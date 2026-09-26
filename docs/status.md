@@ -8,16 +8,29 @@
   frontend cachea (TanStack Query) pero nunca es la fuente — ver
   [decisión 004](decisions/004-agente-ia-mcp-cosmosdb.md) y
   [decisión 005](decisions/005-cache-frontend-vs-fuente-de-verdad.md).
-- **Implementado y probado (20/20 tests reales, no solo especificado)**: dominio de negocio
+- **Implementado y probado (24/24 tests reales, no solo especificado)**: dominio de negocio
   en Python (`domain/service.py`, puerto 1:1 de `packages/shared/src/store.ts`) + servidor
   MCP custom (`mcp_server.py`, mismo patrón que `oraculo/mcp_server.py`) + repositorio en
   memoria para tests. Incluye un test end-to-end real sobre el protocolo MCP (cliente MCP
-  oficial contra un servidor HTTP real, no mocks) — ver `services/octo-erp-agent/README.md`
-  para el detalle de qué está probado y qué no.
-- **Pendiente**: `CosmosRepository` está escrito contra la API real del SDK pero sin
-  verificar contra una cuenta de Cosmos DB real (sin credenciales de Azure en este entorno
-  de desarrollo); infraestructura Bicep; despliegue; y el proyecto de ejemplo del usuario
-  para el mecanismo exacto de auth Foundry↔MCP. Especificación completa en
+  oficial contra un servidor HTTP real, no mocks) — ver `services/octo-erp-agent/README.md`.
+- **`CosmosRepository` verificado contra una cuenta real de Azure** (ya no es solo código
+  escrito contra la API del SDK): `rg-octo-erp-dev` (eastus) tiene una cuenta de Cosmos DB
+  Serverless real con los 5 containers del esquema, y
+  `tests/test_cosmos_integration.py` (4 tests, round-trip real: producto, variante+stock,
+  material+stock, pedido+movimiento) pasa en verde contra ella, autenticado por RBAC de
+  datos de Entra ID (sin keys — la cuenta tiene `disableLocalAuth: true`). Ver
+  [decisión 006](decisions/006-ci-cd-azure-oidc.md) para el detalle completo.
+- **CI/CD en GitHub Actions, con OIDC federado (sin secrets de larga vida)**:
+  `.github/workflows/octo-erp-agent-ci.yml` (tests unitarios en cada push/PR + el test de
+  integración contra Cosmos real) y `octo-erp-agent-cd.yml` (deploy del Bicep + publish de
+  `function_app.py`, el wrapper de Azure Functions nuevo). **Bloqueado**: dos asignaciones
+  de rol (Data Contributor en Cosmos + Contributor en el resource group, para el service
+  principal de CI) las bloqueó el clasificador de permisos de Claude Code como "otorgar
+  permisos" — quedan los comandos exactos en la decisión 006, sección "Pendiente de tu
+  lado", para que los corras vos y el pipeline termine de funcionar.
+- **Pendiente**: correr los dos comandos bloqueantes de arriba; verificar el primer run de
+  `octo-erp-agent-cd.yml` una vez desbloqueado; y el proyecto de ejemplo del usuario para el
+  mecanismo exacto de auth Foundry↔MCP. Especificación completa en
   `oraculo/docs/10-especificacion-2-agente-octo-erp.md`.
 
 ## Hecho

@@ -1,0 +1,69 @@
+name: octo-erp-agent CD
+
+# Despliega infra/main.bicep (Cosmos DB serverless + Function App, ver ese archivo) y
+# publica el código del servidor MCP. Requiere que el service principal de OIDC
+# (AZURE_CLIENT_ID) tenga el rol Contributor sobre el resource group de destino —
+# ver docs/decisions/006-ci-cd-azure-oidc.md, sección "Pendiente de tu lado" si este
+# workflow falla con un error de autorización.
+on:
+  push:
+    branches:
+      - claude/tender-faraday-fyyif3
+    paths:
+      - "services/octo-erp-agent/**"
+      - ".github/workflows/octo-erp-agent-cd.yml"
+  workflow_dispatch: {}
+
+concurrency:
+  group: octo-erp-agent-cd
+  cancel-in-progress: false
+
+defaults:
+  run:
+    working-directory: services/octo-erp-agent
+
+jobs:
+  deploy-infra:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    outputs:
+      function-app-name: ${{ steps.deploy.outputs.functionAppName }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - id: deploy
+        uses: azure/arm-deploy@v2
+        with:
+          scope: resourcegroup
+          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP }}
+          template: services/octo-erp-agent/infra/main.bicep
+          parameters: dataContributorPrincipalIds=${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}
+
+  deploy-code:
+    runs-on: ubuntu-latest
+    needs: deploy-infra
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          python-version: "3.12"
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
+          package: services/octo-erp-agent
+          scm-do-build-during-deployment: true
+          enable-oryx-build: true

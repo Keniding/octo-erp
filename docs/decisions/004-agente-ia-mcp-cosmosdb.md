@@ -3,11 +3,12 @@
 **Estado:** especificación escrita, decisión bloqueante resuelta (ver
 [decisión 005](005-cache-frontend-vs-fuente-de-verdad.md): Cosmos DB es la única fuente de
 verdad). Dominio de negocio y servidor MCP custom **implementados y probados** en
-`services/octo-erp-agent/` (20/20 tests reales pasando, incluyendo un round-trip end-to-end
-sobre el protocolo MCP real — ver su `README.md`). Pendiente: conexión a una cuenta Cosmos
-DB real (sin credenciales de Azure disponibles en el entorno de desarrollo de esta sesión),
-infraestructura Bicep, y el proyecto de ejemplo del usuario para afinar el mecanismo exacto
-de auth entre Foundry y el MCP custom.
+`services/octo-erp-agent/` (24/24 tests reales pasando, incluyendo un round-trip end-to-end
+sobre el protocolo MCP real y otro contra una cuenta de Cosmos DB real — ver su `README.md`).
+Infraestructura Bicep desplegada, CI/CD en GitHub Actions con OIDC — ver
+[decisión 006](006-ci-cd-azure-oidc.md) para el detalle y el bloqueante pendiente de RBAC.
+Sigue pendiente: el proyecto de ejemplo del usuario para afinar el mecanismo exacto de auth
+entre Foundry y el MCP custom.
 
 ## Contexto
 

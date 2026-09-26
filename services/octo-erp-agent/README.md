@@ -10,8 +10,9 @@ Implementación real (no solo especificación) del MCP custom descrito en
 |---|---|
 | `domain/service.py` (reglas de negocio: validación de stock, creación de pedidos, umbrales de reposición) | ✅ 17 tests unitarios reales, corriendo contra `InMemoryRepository` — `tests/test_service.py` |
 | `mcp_server.py` (servidor MCP completo: tools, protocolo) | ✅ 1 test end-to-end real: levanta un servidor HTTP de verdad (uvicorn) y le habla con el **cliente MCP oficial** (`mcp.client.streamable_http` + `ClientSession`) — `tests/test_mcp_server.py`. No es un mock: es `initialize` → `tools/list` → `tools/call` real sobre HTTP real. |
-| `repositories/cosmos.py` (conexión real a Azure Cosmos DB) | ⚠️ Código escrito contra la API real del SDK `azure-cosmos`, pero **sin verificar contra una cuenta de Cosmos DB real** — este sandbox no tiene credenciales de Azure. Sí está probado que implementa el mismo contrato que `InMemoryRepository` (`tests/test_repositories_conform_to_protocol.py`). |
-| Despliegue en Azure Functions, auth Entra ID/Easy Auth | ❌ No implementado todavía — eso vive en Bicep, pendiente (ver especificación, sección 10.11). |
+| `repositories/cosmos.py` (conexión real a Azure Cosmos DB) | ✅ Verificado contra una cuenta real (`rg-octo-erp-dev`, Serverless, 5 containers) — `tests/test_cosmos_integration.py`, 4 tests de round-trip real, autenticados por RBAC de datos de Entra ID (sin keys). Ver [decisión 006](../../docs/decisions/006-ci-cd-azure-oidc.md). También probado que implementa el mismo contrato que `InMemoryRepository` (`tests/test_repositories_conform_to_protocol.py`). |
+| Despliegue en Azure Functions | ✅ `infra/main.bicep` desplegado + `function_app.py` (wrapper, mismo patrón que `oraculo/function_app.py`) + CI/CD en GitHub Actions (`.github/workflows/octo-erp-agent-{ci,cd}.yml`) con auth OIDC. Bloqueado en dos asignaciones de rol que quedan para que el dueño de la cuenta las corra — ver decisión 006, "Pendiente de tu lado". |
+| Auth Entra ID/Easy Auth de cara al agente/Foundry | ❌ No implementado todavía — pendiente el proyecto de ejemplo del usuario para el mecanismo exacto (ver especificación, sección 10.9). |
 
 ## Correr los tests
 
@@ -21,8 +22,18 @@ uv sync
 uv run pytest -v
 ```
 
-20 tests, todos determinísticos, sin red externa (el test end-to-end del MCP levanta su
-propio servidor en un puerto local libre y lo cierra al terminar).
+20 tests unitarios/MCP, determinísticos, sin red externa (el test end-to-end del MCP levanta
+su propio servidor en un puerto local libre y lo cierra al terminar), + 4 tests de
+integración real contra Cosmos DB que se saltan automáticamente si no hay `COSMOS_ENDPOINT`
+en el entorno. Para correr esos 4 contra la cuenta real de `rg-octo-erp-dev` (con `az login`
+ya autenticado y el rol de datos asignado a tu usuario):
+
+```bash
+COSMOS_ENDPOINT="https://octo-erp-cosmos-hrhdi4.documents.azure.com:443/" uv run pytest tests/test_cosmos_integration.py -v
+```
+
+En CI, esto mismo corre autenticado por OIDC en vez de tu `az login` — ver
+`.github/workflows/octo-erp-agent-ci.yml` y la [decisión 006](../../docs/decisions/006-ci-cd-azure-oidc.md).
 
 ## Correr el servidor MCP localmente
 
