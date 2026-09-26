@@ -45,6 +45,16 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return (await response.json()) as T;
 }
 
+export interface AgentChatAction {
+  type: string;
+  [key: string]: unknown;
+}
+
+export interface AgentChatResult {
+  reply: string;
+  action: AgentChatAction | null;
+}
+
 interface ErpApiState extends ErpData {
   loading: boolean;
   loadError: string | null;
@@ -62,7 +72,19 @@ interface ErpApiState extends ErpData {
     note?: string,
   ) => Promise<Material>;
   createOrder: (input: NewOrderInput) => Promise<Order>;
+  sendAgentMessage: (message: string) => Promise<AgentChatResult>;
 }
+
+// Cada cuánto se refresca /api/state en segundo plano, para que un cambio hecho por OTRO
+// cliente (el agente conversacional, otra pestaña, otra persona) aparezca sin recargar.
+// Polling, no WebSockets/SSE: en Azure Functions Consumption una conexión abierta que
+// nadie cierra se queda colgada hasta que la plataforma la mata por timeout — el mismo
+// problema real que ya documentó oraculo/docs/04-protocolo-mcp.md sección 4.4 para el
+// servidor MCP. Polling es el mecanismo que de verdad funciona con esta infraestructura,
+// sin agregar Azure Web PubSub/SignalR (costo y complejidad fuera del objetivo "$0 en
+// idle" ya establecido). 4s es un compromiso entre "se siente en vivo" y no saturar el
+// plan Consumption con requests constantes.
+const POLL_INTERVAL_MS = 4000;
 
 const ErpApiContext = createContext<ErpApiState | null>(null);
 
@@ -82,6 +104,16 @@ export function ErpApiProvider({ children }: { children: ReactNode }) {
     refresh()
       .catch((err) => setLoadError(err instanceof Error ? err.message : "No se pudo cargar el estado."))
       .finally(() => setLoading(false));
+  }, [refresh]);
+
+  useEffect(() => {
+    // Polling en segundo plano — ver POLL_INTERVAL_MS. Silencioso ante errores de red
+    // puntuales (no pisa loadError, que es solo para el fallo de la carga inicial): un
+    // poll que falla una vez no debe tirar abajo una UI que ya estaba funcionando.
+    const id = window.setInterval(() => {
+      refresh().catch(() => {});
+    }, POLL_INTERVAL_MS);
+    return () => window.clearInterval(id);
   }, [refresh]);
 
   const addProduct = useCallback(async (input: NewProductInput) => {
@@ -142,9 +174,35 @@ export function ErpApiProvider({ children }: { children: ReactNode }) {
     [refresh],
   );
 
+  const sendAgentMessage = useCallback(
+    async (message: string) => {
+      const result = await apiFetch<AgentChatResult>("/api/agent/chat", {
+        method: "POST",
+        body: JSON.stringify({ message }),
+      });
+      // El agente puede haber cambiado datos (crear pedido, ajustar stock) — refrescar de
+      // inmediato en vez de esperar al próximo poll, para que la respuesta del chat y el
+      // resto de la UI queden consistentes en el mismo instante.
+      if (result.action) {
+        await refresh();
+      }
+      return result;
+    },
+    [refresh],
+  );
+
   return (
     <ErpApiContext.Provider
-      value={{ ...data, loading, loadError, addProduct, adjustVariantStock, adjustMaterialStock, createOrder }}
+      value={{
+        ...data,
+        loading,
+        loadError,
+        addProduct,
+        adjustVariantStock,
+        adjustMaterialStock,
+        createOrder,
+        sendAgentMessage,
+      }}
     >
       {children}
     </ErpApiContext.Provider>

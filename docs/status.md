@@ -48,8 +48,20 @@
   un test con estado hardcodeado que no toleraba que el backend ahora persiste entre tests,
   y que `Azure/functions-action@v1` con RBAC/OIDC contra Linux Consumption no corre ningún
   build remoto por defecto.
+- **Sección "Agente" en `apps/web` (nuevo, decisión 008)**: página `/agente`, construida 100%
+  con el design system existente, con un chat que ejecuta acciones reales (crear pedidos,
+  ajustar stock, consultar catálogo/stock bajo) contra las mismas funciones de dominio que ya
+  usan el MCP y la API REST. El "cerebro" hoy es un intérprete de comandos (no un LLM
+  todavía — honesto y documentado así, ver decisión 008), pensado como el punto exacto donde
+  Foundry se conecta después sin tocar el resto del código. `ErpApiProvider` ahora hace
+  polling cada 4s además de refrescar tras cada acción propia, así que un cambio hecho por el
+  agente (o por cualquier otro cliente) aparece solo, sin recargar — **verificado con un test
+  de Playwright real que abre dos pestañas y confirma la propagación sin que la segunda
+  navegue nunca**. 20 tests nuevos (15 backend + 5 e2e), suite completa en verde (45+4
+  backend, 28 e2e).
 - **Pendiente**: `apps/mobile` sigue sin conectarse a Azure (fuera de alcance de esta
-  sesión, ver decisión 007); auth Entra ID/Easy Auth de cara al agente/Foundry; y el
+  sesión, ver decisión 007); auth Entra ID/Easy Auth de cara al agente/Foundry; conectar el
+  agente a un LLM real (Azure AI Foundry) en vez del intérprete de comandos actual; y el
   proyecto de ejemplo del usuario para el mecanismo exacto de esa auth. Especificación
   completa en `oraculo/docs/10-especificacion-2-agente-octo-erp.md`.
 

@@ -44,14 +44,19 @@ test.describe("Ajuste de inventario", () => {
 
   test("rechaza un ajuste que dejaría stock negativo", async ({ page }) => {
     await page.goto("/inventario");
-    const variantId = "var-dragon-resina"; // seed stock: 2
+    const variantId = "var-dragon-resina";
+
+    // Backend con estado real de servidor: no asumir el valor semilla (2), leerlo antes de
+    // actuar — mismo motivo que ya documenta el test de "Creación de pedido" más abajo.
+    const stockCell = page.getByTestId(`variant-stock-value-${variantId}`);
+    const before = await stockCell.innerText();
 
     await page.getByTestId("variant-stock-select").selectOption(variantId);
-    await page.getByTestId("variant-stock-delta").fill("-10");
+    await page.getByTestId("variant-stock-delta").fill("-999999");
     await page.getByTestId("variant-stock-submit").click();
 
     await expect(page.getByTestId("inventory-error")).toBeVisible();
-    await expect(page.getByTestId(`variant-stock-value-${variantId}`)).toHaveText("2");
+    await expect(stockCell).toHaveText(before);
   });
 });
 

@@ -21,3 +21,4 @@ __pycache__/
 .pytest_cache/
 
 .idea/
+apps/web/playwright.sandbox.config.ts

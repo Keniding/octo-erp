@@ -19,6 +19,7 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.routing import Route
 
+from . import agent_chat
 from .domain import service
 from .domain.errors import InsufficientStockError, NotFoundError, ValidationError
 from .domain.repository import ErpRepository
@@ -143,6 +144,20 @@ async def update_order_status(request: Request) -> JSONResponse:
     return JSONResponse(_order_to_doc(order))
 
 
+async def agent_chat_endpoint(request: Request) -> JSONResponse:
+    """Ver agent_chat.py — hoy es un intérprete de comandos, no un LLM (documentado ahí en
+    detalle). Actúa sobre `request.app.state.repo`, el mismo repositorio que /api/* y /mcp,
+    así que sus acciones son visibles de inmediato para cualquier otro cliente que lea de
+    ahí (incluido el próximo poll de apps/web)."""
+    repo: ErpRepository = request.app.state.repo
+    body = await request.json()
+    message = body.get("message", "")
+    if not isinstance(message, str):
+        return JSONResponse({"error": "'message' debe ser un string."}, status_code=400)
+    result = agent_chat.handle_message(repo, message)
+    return JSONResponse({"reply": result.reply, "action": result.action})
+
+
 async def list_movements(request: Request) -> JSONResponse:
     repo: ErpRepository = request.app.state.repo
     target_id = request.query_params.get("targetId")
@@ -160,4 +175,5 @@ api_routes = [
     Route("/api/orders", create_order, methods=["POST"]),
     Route("/api/orders/{order_id}/status", update_order_status, methods=["PATCH"]),
     Route("/api/movements", list_movements, methods=["GET"]),
+    Route("/api/agent/chat", agent_chat_endpoint, methods=["POST"]),
 ]

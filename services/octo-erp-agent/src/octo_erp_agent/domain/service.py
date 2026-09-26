@@ -195,6 +195,19 @@ def create_order(
     return order
 
 
+def find_variant_by_sku(repo: ErpRepository, sku: str) -> ProductVariant | None:
+    """Búsqueda por SKU (no por id) — la unidad con la que la gente habla de una variante en
+    lenguaje natural ('el SAM-10-RAW') es el SKU, nunca el id interno generado por
+    make_id(). Usado por agent_chat.py; no tiene equivalente directo en
+    packages/shared/src/store.ts porque la UI de apps/web siempre trabaja con ids desde los
+    <select>, nunca pide al usuario que escriba un SKU a mano."""
+    needle = sku.strip().lower()
+    for variant in repo.list_variants():
+        if variant.sku.lower() == needle:
+            return variant
+    return None
+
+
 def list_low_stock_variants(repo: ErpRepository) -> list[ProductVariant]:
     return [v for v in repo.list_variants() if v.stock_units <= v.reorder_threshold]
 

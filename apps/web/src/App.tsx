@@ -1,5 +1,6 @@
 import { Route, Routes } from "react-router-dom";
 import { AppShell } from "./layout/AppShell";
+import { AgentPage } from "./pages/AgentPage";
 import { CatalogPage } from "./pages/CatalogPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { OrdersPage } from "./pages/OrdersPage";
@@ -21,6 +22,7 @@ export function App() {
         <Route index element={<CatalogPage />} />
         <Route path="inventario" element={<InventoryPage />} />
         <Route path="pedidos" element={<OrdersPage />} />
+        <Route path="agente" element={<AgentPage />} />
       </Route>
     </Routes>
   );

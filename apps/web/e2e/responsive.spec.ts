@@ -15,6 +15,7 @@ const PAGES = [
   { name: "catalogo", path: "/" },
   { name: "inventario", path: "/inventario" },
   { name: "pedidos", path: "/pedidos" },
+  { name: "agente", path: "/agente" },
 ];
 
 for (const breakpoint of BREAKPOINTS) {

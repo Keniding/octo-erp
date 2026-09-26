@@ -6,6 +6,7 @@ const NAV_ITEMS = [
   { to: "/", label: "Catálogo", testId: "nav-catalogo" },
   { to: "/inventario", label: "Inventario", testId: "nav-inventario" },
   { to: "/pedidos", label: "Pedidos", testId: "nav-pedidos" },
+  { to: "/agente", label: "Agente", testId: "nav-agente" },
 ];
 
 export function AppShell() {
