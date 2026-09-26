@@ -71,27 +71,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      # Con RBAC/OIDC (no publish profile) contra Linux Consumption, "Run From Package" no
-      # corre ningún build remoto — las dependencias se instalan aquí, en el runner, antes
-      # de empaquetar (mismo patrón que documenta Microsoft para Python + RBAC + Linux
-      # Consumption). Ver docs/decisions/007-rest-api-para-apps-web.md.
+      # Causa real de los "sync trigger" fallidos (probado con az functionapp deploy,
+      # func azure functionapp publish y Azure/functions-action: los tres fallan igual, así
+      # que no era el mecanismo de deploy): azure-functions sin techo de versión resolvía a
+      # 2.x, que requiere Python >=3.13, mientras el Function App corre PYTHON|3.12 (ver
+      # infra/main.bicep) — el worker de Python no arranca, por eso el host no puede
+      # responder al sync trigger. requirements.txt ya fija `<2.0.0` (mismo problema que
+      # oraculo/infra/README.md ya había documentado, en la dirección opuesta de versión de
+      # Python). El build tiene que correr en Linux (este runner), nunca localmente en
+      # Windows: los paquetes con extensiones compiladas (cryptography, cffi, pydantic-core)
+      # se resuelven para el SO donde corre pip, y un build hecho en Windows no arranca en el
+      # contenedor Linux del Function App.
       - name: Instalar dependencias dentro del paquete a desplegar
         run: pip install --target="./.python_packages/lib/site-packages" -r requirements.txt
-      - name: Empaquetar
-        run: zip -r ../deploy.zip function_app.py host.json requirements.txt src .python_packages
       - uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      # Azure/functions-action@v1 (basado en el SDK de Node) falla consistentemente en su
-      # paso de "sync trigger" contra esta Function App — confirmado con múltiples runs
-      # reales, incluso contra una instancia recién creada desde cero, así que no es un
-      # estado corrupto de la app. `az functionapp deploy` (az CLI, misma auth OIDC) usa la
-      # API OneDeploy en vez del SDK y sí completa el ciclo.
-      - name: Publicar con az functionapp deploy (OneDeploy) en vez de Azure/functions-action
-        run: |
-          az functionapp deploy \
-            --name "${{ vars.AZURE_FUNCTION_APP_NAME }}" \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --src-path ../deploy.zip --type zip
+      - uses: Azure/functions-action@v1
+        with:
+          app-name: ${{ vars.AZURE_FUNCTION_APP_NAME }}
+          package: services/octo-erp-agent
+          respect-funcignore: true

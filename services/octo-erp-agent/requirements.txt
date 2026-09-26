@@ -1,7 +1,12 @@
 # Azure Functions Python worker instala desde este archivo (no lee pyproject.toml).
 # El paquete propio se instala con "." (build vía hatchling, ver pyproject.toml) para que
 # `function_app.py` pueda hacer `from octo_erp_agent.mcp_server import asgi_app`.
-azure-functions>=1.21.0
+#
+# azure-functions<2.0.0: la 2.x requiere Python >=3.13, pero el Function App corre
+# PYTHON|3.12 (ver infra/main.bicep) — sin este techo, pip resuelve 2.x y el worker de
+# Python no arranca (mismo error 503 persistente que ya documentó
+# oraculo/infra/README.md al pisarlo).
+azure-functions>=1.21.0,<2.0.0
 mcp>=1.2.0
 azure-cosmos>=4.7.0
 azure-identity>=1.19.0

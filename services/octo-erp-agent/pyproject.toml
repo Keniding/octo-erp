@@ -7,7 +7,10 @@ dependencies = [
     "mcp>=1.2.0",
     "azure-cosmos>=4.7.0",
     "azure-identity>=1.19.0",
-    "azure-functions>=1.21.0",
+    # azure-functions 2.x requiere Python >=3.13; el Function App corre PYTHON|3.12
+    # (ver infra/main.bicep) — mismo techo que ya documentó oraculo/infra/README.md tras
+    # pisar este error (503 persistente por el mismo desajuste de versión).
+    "azure-functions>=1.21.0,<2.0.0",
     "python-dotenv>=1.0.1",
 ]
 

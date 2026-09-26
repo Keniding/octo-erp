@@ -70,33 +70,12 @@ wheels = [
 name = "azure-functions"
 version = "1.25.0"
 source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version == '3.12.*' and sys_platform == 'emscripten'",
-    "(python_full_version < '3.13' and sys_platform != 'emscripten') or (python_full_version < '3.12' and sys_platform == 'emscripten')",
-]
 dependencies = [
-    { name = "werkzeug", marker = "python_full_version < '3.13'" },
+    { name = "werkzeug" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6f/eb/745418bd7ae135068a88dcd2e0b3cefd526068a7bbe55cc29d5fb5919080/azure_functions-1.25.0.tar.gz", hash = "sha256:3c737657110b6cfd14e6871515ab66c377b9ceecaca8dcbf5b391d2433424756", size = 143938, upload-time = "2026-08-05T19:12:50.176Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a8/21/9374de0e429e7a45090c097111fbbcdea019e726b252cbb35428a816ed1c/azure_functions-1.25.0-py3-none-any.whl", hash = "sha256:0d01e52c0871a01a65911bc163a0dfd7f09725ba43cea17a09909cc5d298c1d2", size = 113831, upload-time = "2026-08-05T19:12:51.567Z" },
-]
-
-[[package]]
-name = "azure-functions"
-version = "2.3.0"
-source = { registry = "https://pypi.org/simple" }
-resolution-markers = [
-    "python_full_version >= '3.14'",
-    "python_full_version == '3.13.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.13.*' and sys_platform != 'emscripten'",
-]
-dependencies = [
-    { name = "werkzeug", marker = "python_full_version >= '3.13'" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/46/13/fba9acea1d5ebcd849487b11ba4fe1a4e15d77fb10859c09371c31977116/azure_functions-2.3.0.tar.gz", hash = "sha256:32136bae3285680edd2b2d1786c37d381a9ba4c23332dcd590e354190dbe6c9a", size = 174394, upload-time = "2026-08-28T16:14:38.061Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/47/9f/782dd3799adbab974b02284c5b1e0736f6952ebe3b918f595e71aa99bc70/azure_functions-2.3.0-py3-none-any.whl", hash = "sha256:9eb166cd83875dd88996c5f23a46f8edbbc78c0f9c41926bfdf960be54b6c889", size = 129381, upload-time = "2026-08-28T16:14:39.513Z" },
 ]
 
 [[package]]
@@ -708,8 +687,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "azure-cosmos" },
-    { name = "azure-functions", version = "1.25.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13'" },
-    { name = "azure-functions", version = "2.3.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13'" },
+    { name = "azure-functions" },
     { name = "azure-identity" },
     { name = "mcp" },
     { name = "python-dotenv" },
@@ -725,7 +703,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "azure-cosmos", specifier = ">=4.7.0" },
-    { name = "azure-functions", specifier = ">=1.21.0" },
+    { name = "azure-functions", specifier = ">=1.21.0,<2.0.0" },
     { name = "azure-identity", specifier = ">=1.19.0" },
     { name = "mcp", specifier = ">=1.2.0" },
     { name = "python-dotenv", specifier = ">=1.0.1" },

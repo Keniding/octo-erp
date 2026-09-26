@@ -74,6 +74,22 @@ todavía lo usa (ver "Trade-offs aceptados"). Los 5 puntos de uso en `apps/web`
    con `scripts/seed_cosmos.py`: `npx playwright test` con
    `VITE_API_BASE_URL=https://octo-erp-hrhdi4.azurewebsites.net` — mismo resultado en verde,
    navegador real → Vite → HTTP real → Function App real → Cosmos DB real.
+4. **Causa real detrás de una racha larga de "sync trigger" fallidos** (después del punto
+   2, con la app ya funcionando una vez): un cambio de infra posterior (agregar
+   `CORS_ALLOWED_ORIGINS`) dejó la app sin responder, y **cuatro** mecanismos de deploy
+   distintos fallaron igual contra ella (`Azure/functions-action@v1`, `az functionapp
+   deploy`/OneDeploy, `az functionapp deployment source config-zip`, y `func azure
+   functionapp publish`) — incluso recreando la Function App desde cero. Eso descartó que
+   fuera el mecanismo de deploy o un estado corrupto puntual. La causa real:
+   `azure-functions` en `requirements.txt`/`pyproject.toml` no tenía techo de versión y
+   resolvía a `2.x`, que requiere Python ≥3.13 — pero el Function App corre `PYTHON|3.12`
+   (ver `infra/main.bicep`). El worker de Python nunca llegaba a arrancar, así que el host
+   no podía ni responder al sync trigger. **`oraculo/infra/README.md` ya documentaba
+   exactamente este problema** (en la dirección opuesta: probaron `PYTHON|3.13` y les dio
+   "503 persistente", fijaron `azure-functions<2.0.0` + `PYTHON|3.12`) — no se consultó esa
+   referencia a tiempo, así que se perdió ~1 hora reintentando mecanismos de deploy en vez
+   de mirar la causa real. Fijado con el mismo techo de versión
+   (`azure-functions>=1.21.0,<2.0.0`).
 
 ## Pendiente / trade-offs aceptados
 
