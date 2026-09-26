@@ -26,6 +26,10 @@ param dataContributorPrincipalIds array = []
 @description('Orígenes permitidos por CORS para la API REST (/api/*) que consume apps/web — ver rest_api.py/http_app.py y docs/decisions/007-rest-api-para-apps-web.md. Nota importante: appSettings en Microsoft.Web/sites es un reemplazo completo, no un merge — cualquier origen agregado a mano con `az functionapp config appsettings set` se pierde en el próximo deploy si no está también acá.')
 param corsAllowedOrigins string = 'http://localhost:5173,http://localhost:4173'
 
+@description('Connection string de Application Insights para diagnóstico real del worker de Python (logs/exceptions vía az monitor app-insights query) — vacío por defecto. Mismo motivo que corsAllowedOrigins: si se setea a mano con appsettings set en vez de acá, el próximo deploy de este Bicep lo borra.')
+@secure()
+param applicationInsightsConnectionString string = ''
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = toLower('st${replace(baseName, '-', '')}${take(uniqueSuffix, 6)}')
 var appServicePlanName = '${baseName}-plan'
@@ -81,6 +85,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '1' }
         { name: 'COSMOS_ENDPOINT', value: cosmosAccount.properties.documentEndpoint }
         { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
+        { name: 'APPLICATIONINSIGHTS_CONNECTION_STRING', value: applicationInsightsConnectionString }
       ]
     }
   }
