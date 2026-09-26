@@ -11,6 +11,7 @@ on:
     paths:
       - "services/octo-erp-agent/**"
       - ".github/workflows/octo-erp-agent-ci.yml"
+  workflow_dispatch: {}
 
 defaults:
   run:

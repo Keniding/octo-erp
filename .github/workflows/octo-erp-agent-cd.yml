@@ -28,8 +28,6 @@ jobs:
     permissions:
       id-token: write
       contents: read
-    outputs:
-      function-app-name: ${{ steps.deploy.outputs.functionAppName }}
     steps:
       - uses: actions/checkout@v4
       - uses: azure/login@v2
@@ -37,13 +35,13 @@ jobs:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-      - id: deploy
-        uses: azure/arm-deploy@v2
-        with:
-          scope: resourcegroup
-          resourceGroupName: ${{ vars.AZURE_RESOURCE_GROUP }}
-          template: services/octo-erp-agent/infra/main.bicep
-          parameters: dataContributorPrincipalIds=${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}
+      # azure/arm-deploy@v2 no maneja bien un parámetro de tipo array pasado inline como
+      # key=value (le rompe las comillas del JSON) — az deployment group create directo sí.
+      - run: |
+          az deployment group create \
+            -g "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            -f infra/main.bicep \
+            -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}'
 
   deploy-code:
     runs-on: ubuntu-latest
