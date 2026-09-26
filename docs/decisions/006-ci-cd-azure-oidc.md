@@ -58,6 +58,25 @@ pipeline en GitHub Actions.
   introducir una connection string con key en un `.env` o en un secret de CI — la única
   puerta de entrada a los datos es un role assignment explícito por identidad.
 
+## Confirmado corriendo de verdad en GitHub Actions (no solo "debería funcionar")
+
+Se empujó el trabajo y se miraron los runs reales (`gh run view`), no se asumió que
+funcionaría:
+
+- `unit-tests` (sin Azure) pasa en verde en el primer intento.
+- El primer intento de `integration-cosmos`/`deploy-infra` falló con
+  `AADSTS700213: No matching federated identity record` — GitHub Actions manda el subject
+  claim en el formato "immutable ID" (`repo:Keniding@115328041/octo-erp@1387870632:...`) en
+  vez del clásico `repo:owner/repo:...` que se había configurado. Se agregaron los dos
+  federated credentials adicionales con el subject correcto (quedan también los dos
+  viejos, sin uso pero sin efecto negativo — Entra ID permite hasta 20 por app).
+- Con eso corregido, el error pasó a ser exactamente el esperado:
+  `##[error]No subscriptions found for ***` — que es lo que `az login` reporta cuando el
+  service principal no tiene ningún role assignment todavía. Es la confirmación
+  independiente de que el único paso que falta es correr los dos comandos de la sección
+  siguiente; todo lo demás del pipeline (identidad OIDC, sintaxis de los workflows, uv,
+  checkout) ya está probado funcionando.
+
 ## Pendiente de tu lado (bloqueante para que el pipeline funcione)
 
 Dos asignaciones de rol quedaron sin ejecutar porque el clasificador de permisos de Claude
