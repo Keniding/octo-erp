@@ -37,11 +37,13 @@ jobs:
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
       # azure/arm-deploy@v2 no maneja bien un parámetro de tipo array pasado inline como
       # key=value (le rompe las comillas del JSON) — az deployment group create directo sí.
+      # location=eastus explícito: la suscripción no tiene cuota de Function App Consumption
+      # (Y1) en eastus2, que es la región "default" del resource group (ver decisión 006).
       - run: |
           az deployment group create \
             -g "${{ vars.AZURE_RESOURCE_GROUP }}" \
             -f infra/main.bicep \
-            -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}'
+            -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}' location="${{ vars.AZURE_LOCATION }}"
 
   deploy-code:
     runs-on: ubuntu-latest
