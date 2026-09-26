@@ -55,6 +55,19 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
+      # deploy-infra puede haber cambiado appSettings (fuerza un restart) — sincronizar el
+      # código justo después de eso hizo fallar el sync trigger con "Function app may have
+      # malformed content" (confirmado con un run real: el paquete estaba bien, la app
+      # todavía estaba reiniciando). Se espera a que vuelva a responder antes de desplegar.
+      - name: Esperar a que la Function App esté lista tras el deploy de infra
+        run: |
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' "https://${{ vars.AZURE_FUNCTION_APP_NAME }}.azurewebsites.net/api/state" || true)
+            echo "intento $i: HTTP $code"
+            [ "$code" = "200" ] && exit 0
+            sleep 10
+          done
+          echo "La Function App no respondió 200 a tiempo; se intenta el deploy igual." >&2
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
