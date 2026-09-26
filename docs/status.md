@@ -2,16 +2,23 @@
 
 Última actualización: 2026-09-26.
 
-## Planificado (no implementado)
+## Agente de IA + MCP + Cosmos DB (`services/octo-erp-agent/`)
 
-- **Agente de IA + MCP + Cosmos DB** para dar capacidades conversacionales sobre el ERP
-  (catálogo/inventario/pedidos), con MCP nativo (Cosmos DB) + MCP custom (reglas de negocio
-  del ERP) y Azure AI Foundry, siguiendo los patrones ya probados del proyecto hermano
-  `oraculo`. Especificación completa en `oraculo/docs/10-especificacion-2-agente-octo-erp.md`;
-  puntero y decisión bloqueante (¿Cosmos DB reemplaza el store en memoria o es una réplica?)
-  en [`docs/decisions/004-agente-ia-mcp-cosmosdb.md`](decisions/004-agente-ia-mcp-cosmosdb.md).
-  Sin código todavía — pendiente del proyecto de ejemplo del usuario y de resolver esa
-  decisión.
+- **Decisión tomada**: Cosmos DB es la única fuente de verdad de datos de negocio; el
+  frontend cachea (TanStack Query) pero nunca es la fuente — ver
+  [decisión 004](decisions/004-agente-ia-mcp-cosmosdb.md) y
+  [decisión 005](decisions/005-cache-frontend-vs-fuente-de-verdad.md).
+- **Implementado y probado (20/20 tests reales, no solo especificado)**: dominio de negocio
+  en Python (`domain/service.py`, puerto 1:1 de `packages/shared/src/store.ts`) + servidor
+  MCP custom (`mcp_server.py`, mismo patrón que `oraculo/mcp_server.py`) + repositorio en
+  memoria para tests. Incluye un test end-to-end real sobre el protocolo MCP (cliente MCP
+  oficial contra un servidor HTTP real, no mocks) — ver `services/octo-erp-agent/README.md`
+  para el detalle de qué está probado y qué no.
+- **Pendiente**: `CosmosRepository` está escrito contra la API real del SDK pero sin
+  verificar contra una cuenta de Cosmos DB real (sin credenciales de Azure en este entorno
+  de desarrollo); infraestructura Bicep; despliegue; y el proyecto de ejemplo del usuario
+  para el mecanismo exacto de auth Foundry↔MCP. Especificación completa en
+  `oraculo/docs/10-especificacion-2-agente-octo-erp.md`.
 
 ## Hecho
 

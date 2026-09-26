@@ -13,3 +13,9 @@ test-results/
 .env.local
 web-build/
 .turbo/
+
+# Python (services/octo-erp-agent)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/

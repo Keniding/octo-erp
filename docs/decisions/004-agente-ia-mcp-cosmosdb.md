@@ -1,7 +1,13 @@
-# 004 — Agente de IA + MCP + Cosmos DB para Octo ERP (planificado, no implementado)
+# 004 — Agente de IA + MCP + Cosmos DB para Octo ERP
 
-**Estado:** especificación escrita, pendiente de decisiones bloqueantes y del proyecto de
-ejemplo del usuario. No hay código de este flujo en este repo todavía.
+**Estado:** especificación escrita, decisión bloqueante resuelta (ver
+[decisión 005](005-cache-frontend-vs-fuente-de-verdad.md): Cosmos DB es la única fuente de
+verdad). Dominio de negocio y servidor MCP custom **implementados y probados** en
+`services/octo-erp-agent/` (20/20 tests reales pasando, incluyendo un round-trip end-to-end
+sobre el protocolo MCP real — ver su `README.md`). Pendiente: conexión a una cuenta Cosmos
+DB real (sin credenciales de Azure disponibles en el entorno de desarrollo de esta sesión),
+infraestructura Bicep, y el proyecto de ejemplo del usuario para afinar el mecanismo exacto
+de auth entre Foundry y el MCP custom.
 
 ## Contexto
 
@@ -26,16 +32,26 @@ Se escribió allá (no acá) porque ese repo ya tiene la convención de document
 los patrones de infraestructura (Bicep, MCP sobre Azure Functions, Easy Auth) que esta
 especificación reutiliza explícitamente en vez de reinventar.
 
-## La decisión bloqueante que hay que tomar antes de escribir código
+## La decisión bloqueante — resuelta
 
-La especificación (sección 10.1) deja explícito que no puede avanzar sin definir si Cosmos
-DB reemplaza al store en memoria (`packages/shared/src/store.ts`, ver
-[decisión 001](001-persistencia-en-memoria.md)) como la **única** fuente de verdad que
-también usan `apps/web`/`apps/mobile` (Opción A), o si es una réplica separada alimentada
-por algún mecanismo de sync todavía sin diseñar, solo para que el agente tenga datos
-(Opción B). La especificación asume la Opción A por ser la que realmente conecta el agente
-con lo que el usuario humano ve en el ERP, pero es una asunción a confirmar, no una decisión
-tomada.
+Confirmado: **Opción A**. Cosmos DB reemplaza al store en memoria
+(`packages/shared/src/store.ts`, ver [decisión 001](001-persistencia-en-memoria.md)) como la
+única fuente de verdad de datos de negocio. El detalle de cómo convive esto con caché del
+lado del frontend (preferencias de UI, lazy loading) está en
+[decisión 005](005-cache-frontend-vs-fuente-de-verdad.md).
+
+## Dónde está el código (implementado, no solo especificado)
+
+`services/octo-erp-agent/` — paquete Python (`uv`) con:
+
+- `src/octo_erp_agent/domain/` — reglas de negocio, puerto 1:1 de
+  `packages/shared/src/store.ts` (mismos IDs de datos semilla, mismas validaciones).
+- `src/octo_erp_agent/repositories/` — `InMemoryRepository` (tests, sin Azure) y
+  `CosmosRepository` (real contra Azure Cosmos DB, sin verificar aún contra una cuenta real).
+- `src/octo_erp_agent/mcp_server.py` — servidor MCP custom, mismo patrón que
+  `oraculo/mcp_server.py`.
+- `tests/` — 20 tests, corren con `uv run pytest` (ver `README.md` del paquete para el
+  detalle de qué está probado de verdad y qué no).
 
 ## Trade-off de documentar esto en dos repos
 
