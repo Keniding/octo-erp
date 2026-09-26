@@ -23,6 +23,9 @@ param cosmosDatabaseName string = 'octo-erp'
 @description('Object ids (Entra ID) adicionales a los que se les otorga el rol Cosmos DB Built-in Data Contributor sobre la cuenta — tu usuario para pruebas/desarrollo local y el service principal de OIDC de GitHub Actions para la integración de CI. La identidad administrada de la Function App siempre se agrega, sin necesidad de listarla acá.')
 param dataContributorPrincipalIds array = []
 
+@description('Orígenes permitidos por CORS para la API REST (/api/*) que consume apps/web — ver rest_api.py/http_app.py y docs/decisions/007-rest-api-para-apps-web.md. Nota importante: appSettings en Microsoft.Web/sites es un reemplazo completo, no un merge — cualquier origen agregado a mano con `az functionapp config appsettings set` se pierde en el próximo deploy si no está también acá.')
+param corsAllowedOrigins string = 'http://localhost:5173,http://localhost:4173'
+
 var uniqueSuffix = uniqueString(resourceGroup().id)
 var storageAccountName = toLower('st${replace(baseName, '-', '')}${take(uniqueSuffix, 6)}')
 var appServicePlanName = '${baseName}-plan'
@@ -77,6 +80,7 @@ resource functionApp 'Microsoft.Web/sites@2023-12-01' = {
         { name: 'AzureWebJobsStorage', value: 'DefaultEndpointsProtocol=https;AccountName=${storageAccount.name};AccountKey=${storageAccount.listKeys().keys[0].value};EndpointSuffix=${environment().suffixes.storage}' }
         { name: 'WEBSITE_RUN_FROM_PACKAGE', value: '1' }
         { name: 'COSMOS_ENDPOINT', value: cosmosAccount.properties.documentEndpoint }
+        { name: 'CORS_ALLOWED_ORIGINS', value: corsAllowedOrigins }
       ]
     }
   }

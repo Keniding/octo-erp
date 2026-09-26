@@ -43,7 +43,9 @@ jobs:
           az deployment group create \
             -g "${{ vars.AZURE_RESOURCE_GROUP }}" \
             -f infra/main.bicep \
-            -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}' location="${{ vars.AZURE_LOCATION }}"
+            -p dataContributorPrincipalIds='${{ vars.DATA_CONTRIBUTOR_PRINCIPAL_IDS }}' \
+               location="${{ vars.AZURE_LOCATION }}" \
+               corsAllowedOrigins="${{ vars.CORS_ALLOWED_ORIGINS }}"
 
   deploy-code:
     runs-on: ubuntu-latest
